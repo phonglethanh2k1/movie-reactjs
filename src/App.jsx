@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { fetchDataFromApi } from "./utils/api";
+import { fetchDataFromApi, fetchDataFromApiBanner } from "./utils/api";
 
 import { useSelector, useDispatch } from "react-redux";
 import { getApiConfiguration, getGenres } from "./store/homeSlice";
@@ -12,62 +12,104 @@ import Details from "./pages/details/Details";
 import SearchResult from "./pages/searchResult/SearchResult";
 import Explore from "./pages/explore/Explore";
 import PageNotFound from "./pages/404/PageNotFound";
+import SignIn from "./pages/login/SignIn";
+import Layout from "./layout/layout";
+import SignUp from "./pages/login/SignUp";
+import Ticket from "./pages/ticket/Ticket";
 
 function App() {
-    const dispatch = useDispatch();
-    const { url } = useSelector((state) => state.home);
-    console.log(url);
+  const dispatch = useDispatch();
+  const { url } = useSelector((state) => state.home);
 
-    useEffect(() => {
-        fetchApiConfig();
-        genresCall();
-    }, []);
+  useEffect(() => {
+    fetchApiConfig();
+    genresCall();
+  }, []);
 
-    const fetchApiConfig = () => {
-        fetchDataFromApi("/configuration").then((res) => {
-            console.log(res);
+  const fetchApiConfig = () => {
+    fetchDataFromApiBanner("/configuration").then((res) => {
+      const url = {
+        backdrop: res.images.secure_base_url + "original",
+        poster: res.images.secure_base_url + "original",
+        profile: res.images.secure_base_url + "original",
+      };
 
-            const url = {
-                backdrop: res.images.secure_base_url + "original",
-                poster: res.images.secure_base_url + "original",
-                profile: res.images.secure_base_url + "original",
-            };
+      dispatch(getApiConfiguration(url));
+    });
+  };
 
-            dispatch(getApiConfiguration(url));
-        });
-    };
+  const genresCall = async () => {
+    let promises = [];
+    let endPoints = ["tv", "movie"];
+    let allGenres = {};
 
-    const genresCall = async () => {
-        let promises = [];
-        let endPoints = ["tv", "movie"];
-        let allGenres = {};
+    endPoints.forEach((url) => {
+      promises.push(fetchDataFromApi(`/genre/${url}/list`));
+    });
 
-        endPoints.forEach((url) => {
-            promises.push(fetchDataFromApi(`/genre/${url}/list`));
-        });
+    const data = await Promise.all(promises);
+    // data.map(({ genres }) => {
+    //   return genres.map((item) => (allGenres[item.id] = item));
+    // });
 
-        const data = await Promise.all(promises);
-        console.log(data);
-        data.map(({ genres }) => {
-            return genres.map((item) => (allGenres[item.id] = item));
-        });
-
-        dispatch(getGenres(allGenres));
-    };
-
-    return (
-        <BrowserRouter>
-            <Header />
-            <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/:mediaType/:id" element={<Details />} />
-                <Route path="/search/:query" element={<SearchResult />} />
-                <Route path="/explore/:mediaType" element={<Explore />} />
-                <Route path="*" element={<PageNotFound />} />
-            </Routes>
-            <Footer />
-        </BrowserRouter>
-    );
+    dispatch(getGenres(allGenres));
+  };
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <Layout>
+              <Home />
+            </Layout>
+          }
+        />
+        <Route
+          path="/:mediaType/:id"
+          element={
+            <Layout>
+              <Details />
+            </Layout>
+          }
+        />
+        <Route
+          path="/search/:query"
+          element={
+            <Layout>
+              <SearchResult />
+            </Layout>
+          }
+        />
+        <Route
+          path="/explore/:mediaType"
+          element={
+            <Layout>
+              <Explore />
+            </Layout>
+          }
+        />
+        <Route
+          path="*"
+          element={
+            <Layout>
+              <PageNotFound />
+            </Layout>
+          }
+        />
+        <Route
+          path="/ticket/:maLichChieu"
+          element={
+            <Layout>
+              <Ticket />
+            </Layout>
+          }
+        />
+        <Route path="/signIn" element={<SignIn />} />
+        <Route path="/signUp" element={<SignUp />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
 export default App;
